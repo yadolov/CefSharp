@@ -48,7 +48,63 @@ namespace CefSharp.Example
             MyUnconvertibleProperty = GetType();
             SubObject = new SubBoundObject();
             ExceptionTestObject = new ExceptionTestBoundObject();
+
+            RunCycleCallbackTimer();
         }
+
+        #region Cycle Js Callback Test
+
+        private IJavascriptCallback jsCycleCallback;
+        private readonly object jsCycleCallbackLock = new object();
+
+        private void RunCycleCallbackTimer()
+        {
+            const int taskDelay = 1500;
+
+            Task.Run(async () =>
+            {
+                while (true)
+                {
+                    await Task.Delay(taskDelay);
+
+                    lock (jsCycleCallbackLock)
+                    {
+                        var jsc = jsCycleCallback;
+                        if (jsc == null) continue;
+
+                        var response = new CallbackResponseStruct("Callback (id " + jsc.GetHashCode() + ") result " + Environment.TickCount);
+                        jsc.ExecuteAsync(response).ContinueWith(t =>
+                        {
+                            if (t.Result != null && !t.Result.Success)
+                            {
+                                if (System.Diagnostics.Debugger.IsAttached)
+                                {
+                                    System.Diagnostics.Debugger.Break();
+                                }
+                                else
+                                {
+                                    System.Diagnostics.Debug.Assert(false,
+                                        string.Format("ExecuteAsync error!\nIsDisposed: {0}\nCanExecute: {1}\nMessage:{2}",
+                                        jsc.IsDisposed, jsc.CanExecute, t.Result.Message));
+                                }
+                            }
+                        });
+                    }
+                }
+            });
+        }
+
+        public void TestCycleCallback(IJavascriptCallback javascriptCallback)
+        {
+            lock (jsCycleCallbackLock)
+            {
+                if (jsCycleCallback != null)
+                    jsCycleCallback.Dispose();
+                jsCycleCallback = javascriptCallback;
+            }
+        }
+
+        #endregion
 
         public void TestCallback(IJavascriptCallback javascriptCallback)
         {

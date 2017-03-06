@@ -113,6 +113,30 @@
         </p>
 
         <p>
+            Javascript Cycle Callback Test
+            <br />
+            <script type="text/javascript">
+                function cycleCallback(s) {
+                    var result = document.getElementById('ccbresult');
+                    result.innerHTML += "<span>Cycle Callback: " + s.Response + "</span><br>";
+                }
+
+                function testCycleCallback() {
+                    bound.testCycleCallback(cycleCallback);
+
+                    var result = document.getElementById('ccbresult');
+                    result.innerText = "The function has returned: " + Date() + "\n";
+                }
+            </script>
+            <button onclick="testCycleCallback()">Test Cycle Callback</button>
+            <br />
+            <div id="ccbresult"></div>
+            <script>
+                testCycleCallback();
+            </script>
+        </p>
+
+        <p>
             Disposed Javscript Callback Test (navigates to www.google.com before callback fires)
             <br />
             <script type="text/javascript">
